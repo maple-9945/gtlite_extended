@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+FMLCorePlugin: gregtech.mixins.GregTechMixinLoadingPlugin
+FMLCorePluginContainsFMLMod: true
+FMLAT: gregtech_at.cfg
+ForceLoadAsMod: true
+

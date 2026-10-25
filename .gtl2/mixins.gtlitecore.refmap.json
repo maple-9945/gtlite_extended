@@ -1,0 +1,34 @@
+{
+  "mappings": {
+    "gregtechlite/gtlitecore/mixins/appeng/MixinContainerInterfaceTerminal": {
+      "detectAndSendChanges": "Lappeng/container/implementations/ContainerInterfaceTerminal;func_75142_b()V"
+    },
+    "gregtechlite/gtlitecore/mixins/minecraft/client/MixinMinecraft": {
+      "Lnet/minecraft/client/resources/DefaultResourcePack;getInputStreamAssets(Lnet/minecraft/util/ResourceLocation;)Ljava/io/InputStream;": "Lnet/minecraft/client/resources/DefaultResourcePack;func_152780_c(Lnet/minecraft/util/ResourceLocation;)Ljava/io/InputStream;",
+      "Lnet/minecraft/util/Util;getOSType()Lnet/minecraft/util/Util$EnumOS;": "Lnet/minecraft/util/Util;func_110647_a()Lnet/minecraft/util/Util$EnumOS;",
+      "setWindowIcon": "Lnet/minecraft/client/Minecraft;func_175594_ao()V",
+      "shutdown": "Lnet/minecraft/client/Minecraft;func_71400_g()V"
+    },
+    "gregtechlite/gtlitecore/mixins/minecraft/client/MixinPlayerControllerMP": {
+      "onPlayerDamageBlock": "Lnet/minecraft/client/multiplayer/PlayerControllerMP;func_180512_c(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/EnumFacing;)Z",
+      "resetBlockRemoving": "Lnet/minecraft/client/multiplayer/PlayerControllerMP;func_78767_c()V"
+    }
+  },
+  "data": {
+    "searge": {
+      "gregtechlite/gtlitecore/mixins/appeng/MixinContainerInterfaceTerminal": {
+        "detectAndSendChanges": "Lappeng/container/implementations/ContainerInterfaceTerminal;func_75142_b()V"
+      },
+      "gregtechlite/gtlitecore/mixins/minecraft/client/MixinMinecraft": {
+        "Lnet/minecraft/client/resources/DefaultResourcePack;getInputStreamAssets(Lnet/minecraft/util/ResourceLocation;)Ljava/io/InputStream;": "Lnet/minecraft/client/resources/DefaultResourcePack;func_152780_c(Lnet/minecraft/util/ResourceLocation;)Ljava/io/InputStream;",
+        "Lnet/minecraft/util/Util;getOSType()Lnet/minecraft/util/Util$EnumOS;": "Lnet/minecraft/util/Util;func_110647_a()Lnet/minecraft/util/Util$EnumOS;",
+        "setWindowIcon": "Lnet/minecraft/client/Minecraft;func_175594_ao()V",
+        "shutdown": "Lnet/minecraft/client/Minecraft;func_71400_g()V"
+      },
+      "gregtechlite/gtlitecore/mixins/minecraft/client/MixinPlayerControllerMP": {
+        "onPlayerDamageBlock": "Lnet/minecraft/client/multiplayer/PlayerControllerMP;func_180512_c(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/EnumFacing;)Z",
+        "resetBlockRemoving": "Lnet/minecraft/client/multiplayer/PlayerControllerMP;func_78767_c()V"
+      }
+    }
+  }
+}

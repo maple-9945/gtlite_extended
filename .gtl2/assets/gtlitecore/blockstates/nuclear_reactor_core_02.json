@@ -1,0 +1,59 @@
+{
+  "forge_marker": 1,
+  "defaults": {
+    "model": "gtlitecore:nuclear_reactor_core",
+    "textures": {
+      "all": "gtlitecore:blocks/rendering_error"
+    }
+  },
+  "variants": {
+    "active=false,variant=californium": {
+      "model": "gtlitecore:nuclear_reactor_core",
+      "textures": {
+        "all": "gtlitecore:blocks/casings/nuclear/core/californium"
+      }
+    },
+    "active=true,variant=californium": {
+      "model": "gtlitecore:nuclear_reactor_core",
+      "textures": {
+        "all": "gtlitecore:blocks/casings/nuclear/core/californium_active"
+      }
+    },
+    "active=false,variant=einsteinium": {
+      "model": "gtlitecore:nuclear_reactor_core",
+      "textures": {
+        "all": "gtlitecore:blocks/casings/nuclear/core/einsteinium"
+      }
+    },
+    "active=true,variant=einsteinium": {
+      "model": "gtlitecore:nuclear_reactor_core",
+      "textures": {
+        "all": "gtlitecore:blocks/casings/nuclear/core/einsteinium_active"
+      }
+    },
+    "active=false,variant=fermium": {
+      "model": "gtlitecore:nuclear_reactor_core",
+      "textures": {
+        "all": "gtlitecore:blocks/casings/nuclear/core/fermium"
+      }
+    },
+    "active=true,variant=fermium": {
+      "model": "gtlitecore:nuclear_reactor_core",
+      "textures": {
+        "all": "gtlitecore:blocks/casings/nuclear/core/fermium_active"
+      }
+    },
+    "active=false,variant=mendelevium": {
+      "model": "gtlitecore:nuclear_reactor_core",
+      "textures": {
+        "all": "gtlitecore:blocks/casings/nuclear/core/mendelevium"
+      }
+    },
+    "active=true,variant=mendelevium": {
+      "model": "gtlitecore:nuclear_reactor_core",
+      "textures": {
+        "all": "gtlitecore:blocks/casings/nuclear/core/mendelevium_active"
+      }
+    }
+  }
+}

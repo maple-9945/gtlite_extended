@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+FMLCorePluginContainsFMLMod: true
+FMLAT: gtlitecore_at.cfg
+ForceLoadAsMod: true
+FMLCorePlugin: gregtechlite.gtlitecore.mixins.EarlyMixinLoader
+
