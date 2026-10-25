@@ -1,6 +1,5 @@
 name: Build
 
-# 触发条件：推送到主分支 / 开 PR / 手动触发
 on:
   push:
     branches: [ master, main ]
@@ -10,7 +9,6 @@ on:
 permissions:
   contents: read
 
-# 同一分支的重复构建自动取消旧的
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -24,8 +22,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 自动下载缺失的 GT 依赖 jar
-      - name: Download dev jars (GTCEu / GTLite Core / Morphism Lib / GroovyScript / CTM)
+      # 只下载 GT 核心的 3 个必需依赖
+      - name: Download dev jars (GTCEu / GTLite Core / Morphism Lib)
         run: |
           set -euo pipefail
           mkdir -p libs
@@ -46,28 +44,22 @@ jobs:
             -o "libs/morphismlib-1.12.2-1.0.0.jar" \
             "$BASE/morphismlib-1.12.2-1.0.0.jar"
 
-          echo "==> GroovyScript 1.4.3"
-          curl -fsSL --retry 5 --retry-delay 3 \
-            -o "libs/groovyscript-1.4.3.jar" \
-            "https://mediafilez.forgecdn.net/files/4653/100/groovyscript-1.4.3.jar"
-          
-          echo "==> CTM 1.0.2.31"
-          curl -fsSL --retry 5 --retry-delay 3 \
-            -o "libs/CTM-MC1.12.2-1.0.2.31.jar" \
-            "https://mediafilez.forgecdn.net/files/2917/296/CTM-MC1.12.2-1.0.2.31.jar"
-
-      # 恢复 JDK 25，兼容 CurseForgeGradle 插件
       - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '25'
 
-      # 移除本地路径的 Java 配置（macOS 下使用 sed -i ''）
-      - name: Remove local org.gradle.java.home from gradle.properties
+      # 移除本地路径的 Java 配置
+      - name: Remove local gradle properties
         run: |
           sed -i '' '/^[[:space:]]*org\.gradle\.java\.home[[:space:]]*=/d' gradle.properties || true
-          grep -n "org.gradle" gradle.properties || true
+
+      # 临时注释掉不兼容云端环境的 compileOnly 依赖
+      - name: Patch dependencies for CI
+        run: |
+          sed -i '' '/groovyscript-1.4.3.jar/d' gradle/scripts/dependencies.gradle || true
+          sed -i '' '/CTM-MC1.12.2-1.0.2.31.jar/d' gradle/scripts/dependencies.gradle || true
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -77,9 +69,7 @@ jobs:
 
       - name: Build
         run: |
-          # 将编译运行环境指向当前的 JDK 25
           export GRADLE_OPTS="-Dorg.gradle.java.home=${JAVA_HOME} ${GRADLE_OPTS:-}"
-          # 强制 --no-daemon 避免守护进程驻留内存
           ./gradlew build --no-daemon --stacktrace
 
       - name: List built artifacts
