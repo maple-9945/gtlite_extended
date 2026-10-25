@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
 
       # 自动下载缺失的 GT 依赖 jar
-      - name: Download dev jars (GTCEu / GTLite Core / Morphism Lib)
+      - name: Download dev jars (GTCEu / GTLite Core / Morphism Lib / GroovyScript / CTM)
         run: |
           set -euo pipefail
           mkdir -p libs
@@ -45,6 +45,16 @@ jobs:
           curl -fsSL --retry 5 --retry-delay 3 \
             -o "libs/morphismlib-1.12.2-1.0.0.jar" \
             "$BASE/morphismlib-1.12.2-1.0.0.jar"
+
+          echo "==> GroovyScript 1.4.3"
+          curl -fsSL --retry 5 --retry-delay 3 \
+            -o "libs/groovyscript-1.4.3.jar" \
+            "https://mediafilez.forgecdn.net/files/4653/100/groovyscript-1.4.3.jar"
+          
+          echo "==> CTM 1.0.2.31"
+          curl -fsSL --retry 5 --retry-delay 3 \
+            -o "libs/CTM-MC1.12.2-1.0.2.31.jar" \
+            "https://mediafilez.forgecdn.net/files/2917/296/CTM-MC1.12.2-1.0.2.31.jar"
 
       # 恢复 JDK 25，兼容 CurseForgeGradle 插件
       - name: Set up JDK 25
