@@ -104,8 +104,8 @@ jobs:
         run: |
           # 用 setup-java 提供的 JDK 25 覆盖 daemon JVM（系统属性优先级高于 gradle.properties）
           export GRADLE_OPTS="-Dorg.gradle.java.home=${JAVA_HOME} ${GRADLE_OPTS:-}"
-          # 不加 --no-daemon：让 gradle.properties 里的 org.gradle.jvmargs=-Xmx3G 生效
-          ./gradlew build --stacktrace
+          # 强制使用 --no-daemon 防止 CI 缓存溢出，并移除本地内存限制
+          ./gradlew build --no-daemon --stacktrace
 
       - name: List built artifacts
         if: always()
