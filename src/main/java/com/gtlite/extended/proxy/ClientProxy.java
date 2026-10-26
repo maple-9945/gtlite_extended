@@ -45,11 +45,25 @@ public class ClientProxy extends CommonProxy {
             registerMultiblock(machineId);
         }
 
-        // 升级芯片物品模型（assets/gtlite_extended/models/item/chip_*.json）
-        ModelLoader.setCustomModelResourceLocation(ModItems.CHIP_PERFECT_OC, 0,
-                new ModelResourceLocation(Tags.MOD_ID + ":chip_perfect_oc", "inventory"));
-        ModelLoader.setCustomModelResourceLocation(ModItems.CHIP_ADVANCED, 0,
-                new ModelResourceLocation(Tags.MOD_ID + ":chip_advanced", "inventory"));
+        // 升级芯片的物品模型在 ItemModelRegistry（ModelRegistryEvent）里注册，
+        // 1.12.2 只有这个时机能保证 Item 已经注册完毕、模型映射稳定生效。
+        // 下面按排查要求打印注册名 / 翻译键 / 贴图资源是否存在。
+        GTLiteExtended.LOGGER.info("[GTLite Extended] Registering chip advanced model");
+        GTLiteExtended.LOGGER.info("[GTLite Extended] chip_advanced registryName={} translationKey={}",
+                ModItems.CHIP_ADVANCED.getRegistryName(), ModItems.CHIP_ADVANCED.getTranslationKey());
+        try {
+            boolean textureExists;
+            try {
+                net.minecraft.client.Minecraft.getMinecraft().getResourceManager()
+                        .getResource(new ResourceLocation(Tags.MOD_ID, "textures/items/chip_advanced.png"));
+                textureExists = true;
+            } catch (java.io.IOException notFound) {
+                textureExists = false;
+            }
+            GTLiteExtended.LOGGER.info("[GTLite Extended] 贴图是否存在: {}", textureExists);
+        } catch (Throwable t) {
+            GTLiteExtended.LOGGER.warn("[GTLite Extended] 贴图资源检查失败", t);
+        }
     }
 
     @Override
@@ -72,6 +86,12 @@ public class ClientProxy extends CommonProxy {
             logChipSprite(mc, "gtlite_extended:items/chip_advanced");
             logChipModel(mc, new net.minecraft.item.ItemStack(ModItems.CHIP_PERFECT_OC), "chip_perfect_oc");
             logChipModel(mc, new net.minecraft.item.ItemStack(ModItems.CHIP_ADVANCED), "chip_advanced");
+            GTLiteExtended.LOGGER.info("[GTLite Extended] chip items same={} ids={}/{}",
+                    ModItems.CHIP_PERFECT_OC == ModItems.CHIP_ADVANCED,
+                    net.minecraft.item.Item.getIdFromItem(ModItems.CHIP_PERFECT_OC),
+                    net.minecraft.item.Item.getIdFromItem(ModItems.CHIP_ADVANCED));
+            logResourceJson(mc, "models/item/chip_perfect_oc.json");
+            logResourceJson(mc, "models/item/chip_advanced.json");
         } catch (Throwable t) {
             GTLiteExtended.LOGGER.warn("[GTLite Extended] chip diagnostics failed", t);
         }
@@ -84,6 +104,25 @@ public class ClientProxy extends CommonProxy {
         GTLiteExtended.LOGGER.info("[GTLite Extended] chip model {} ({}) -> class={} particle={} quads={}",
                 label, stack.getItem().getRegistryName(), model.getClass().getName(),
                 model.getParticleTexture().getIconName(), model.getQuads(null, null, 0).size());
+    }
+
+    private static void logResourceJson(net.minecraft.client.Minecraft mc, String path) {
+        try {
+            net.minecraft.util.ResourceLocation resource =
+                    new ResourceLocation(Tags.MOD_ID, path);
+            StringBuilder text = new StringBuilder();
+            try (java.io.InputStream in = mc.getResourceManager().getResource(resource).getInputStream();
+                 java.io.BufferedReader reader = new java.io.BufferedReader(
+                         new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    text.append(line.trim()).append(' ');
+                }
+            }
+            GTLiteExtended.LOGGER.info("[GTLite Extended] resource {} -> {}", path, text);
+        } catch (Throwable t) {
+            GTLiteExtended.LOGGER.warn("[GTLite Extended] cannot read resource {}", path, t);
+        }
     }
 
     private static void logChipSprite(net.minecraft.client.Minecraft mc, String texture) {
