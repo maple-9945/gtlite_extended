@@ -15,6 +15,9 @@ public class ItemUpgradeChip extends Item {
     public ItemUpgradeChip(String chipType, String registryName) {
         this.chipType = chipType;
         setRegistryName("gtlite_extended", registryName);
+        // 注意：1.12.2 这套映射的 Item#setTranslationKey 会自动补 "item." 前缀，
+        // 所以这里只传 "gtlite_extended.xxx"，最终 unlocalized name = item.gtlite_extended.xxx，
+        // 显示名键 = item.gtlite_extended.xxx.name（与 lang 文件一致）。
         setTranslationKey("gtlite_extended." + registryName);
         setCreativeTab(CreativeTabs.MISC);
     }

@@ -3,6 +3,7 @@ package com.gtlite.extended;
 import com.gtlite.extended.common.MachineRegistration;
 import com.gtlite.extended.common.network.ModNetwork;
 import com.gtlite.extended.common.recipe.OreProcessingRecipeMaps;
+import com.gtlite.extended.common.recipe.PetrochemicalRecipeMaps;
 import com.gtlite.extended.proxy.CommonProxy;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.SidedProxy;
@@ -30,6 +31,9 @@ public class GTLiteExtended {
         LOGGER.info("[GTLite Extended] preInit");
         ModNetwork.register();
         MachineRegistration.register();
+        // 石化配方只依赖 Materials / FluidRegistry，preInit 末尾这些都已经注册完毕，
+        // 在这里补齐可以让 JEI 启动时直接看到 4 条石化配方。
+        PetrochemicalRecipeMaps.init();
         proxy.preInit();
     }
 

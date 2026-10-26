@@ -1,2 +1,6 @@
 recipemap.gtlite_extended:ore_processing.name=Ore Processing
+recipemap.gtlite_extended:petrochemical.name=Petrochemical Plant
 gtlite_extended.machine.ore_processor.name=Ore Processor
+gtlite_extended.machine.petrochemical_plant.name=Petrochemical Plant
+item.gtlite_extended.chip_perfect_oc.name=Perfect Overclock Chip
+item.gtlite_extended.chip_advanced.name=Advanced Mode Chip

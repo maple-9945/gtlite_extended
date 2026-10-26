@@ -2,7 +2,7 @@ package com.gtlite.extended.common;
 
 import com.gtlite.extended.Tags;
 import com.gtlite.extended.common.item.ItemUpgradeChip;
-import com.gtlite.extended.common.machine.MetaTileEntityOreProcessor;
+import com.gtlite.extended.common.machine.IChipUpgradable;
 import com.gtlite.extended.common.network.MessageOreProcessorSync;
 import com.gtlite.extended.common.network.ModNetwork;
 import gregtech.api.metatileentity.MetaTileEntity;
@@ -15,7 +15,7 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-/** 芯片右键机器：A 开无损，B 在 A 基础上开高级模式。 */
+/** 芯片右键机器：A 开无损，B 在 A 基础上开高级模式（所有 {@link IChipUpgradable} 机器通用）。 */
 @Mod.EventBusSubscriber(modid = Tags.MOD_ID)
 public final class ChipApplyHandler {
 
@@ -32,26 +32,26 @@ public final class ChipApplyHandler {
         if (!(held.getItem() instanceof ItemUpgradeChip)) return;
 
         MetaTileEntity mte = GTUtility.getMetaTileEntity(event.getWorld(), event.getPos());
-        if (!(mte instanceof MetaTileEntityOreProcessor)) return;
+        if (!(mte instanceof IChipUpgradable)) return;
 
-        MetaTileEntityOreProcessor processor = (MetaTileEntityOreProcessor) mte;
+        IChipUpgradable machine = (IChipUpgradable) mte;
         ItemUpgradeChip chip = (ItemUpgradeChip) held.getItem();
 
         if (chip.isPerfectOc()) {
-            processor.setLosslessOverclock(true);
+            machine.setLosslessOverclock(true);
             player.sendMessage(new TextComponentString("§b[GTLite Extended] 已开启无损超频"));
         } else if (chip.isAdvanced()) {
-            if (!processor.isLosslessOverclock()) {
+            if (!machine.isLosslessOverclock()) {
                 player.sendMessage(new TextComponentString("§c[GTLite Extended] 需要先使用无损超频芯片"));
                 return;
             }
-            processor.setAdvancedMode(true);
+            machine.setAdvancedMode(true);
             player.sendMessage(new TextComponentString("§b[GTLite Extended] 已开启高级模式（零耗电 + 无限并行）"));
         }
 
         if (player instanceof EntityPlayerMP) {
             ModNetwork.INSTANCE.sendTo(
-                    new MessageOreProcessorSync(processor.isLosslessOverclock(), processor.isAdvancedMode()),
+                    new MessageOreProcessorSync(machine.isLosslessOverclock(), machine.isAdvancedMode()),
                     (EntityPlayerMP) player);
         }
         event.setCanceled(true);
