@@ -1,0 +1,121 @@
+{
+  "forge_marker": 1,
+  "variants": {
+    "variant": {
+      "pmma": {
+        "model": "minecraft:cube_all",
+        "ambientocclusion": false,
+        "textures": {
+          "all": "gtlitecore:blocks/casings/glass/pmma"
+        }
+      },
+      "bpa_polycarbonate": {
+        "model": "minecraft:cube_all",
+        "ambientocclusion": false,
+        "textures": {
+          "all": "gtlitecore:blocks/casings/glass/bpa_polycarbonate"
+        }
+      },
+      "cbdo_polycarbonate": {
+        "model": "minecraft:cube_all",
+        "ambientocclusion": false,
+        "textures": {
+          "all": "gtlitecore:blocks/casings/glass/cbdo_polycarbonate"
+        }
+      },
+      "zblan": {
+        "model": "minecraft:cube_all",
+        "ambientocclusion": false,
+        "textures": {
+          "all": "gtlitecore:blocks/casings/glass/zblan"
+        }
+      },
+      "erbium_zblan": {
+        "model": "minecraft:cube_all",
+        "ambientocclusion": false,
+        "textures": {
+          "all": "gtlitecore:blocks/casings/glass/erbium_zblan"
+        }
+      },
+      "praseodymium_zblan": {
+        "model": "minecraft:cube_all",
+        "ambientocclusion": false,
+        "textures": {
+          "all": "gtlitecore:blocks/casings/glass/praseodymium_zblan"
+        }
+      },
+      "gst": {
+        "model": "minecraft:cube_all",
+        "ambientocclusion": false,
+        "textures": {
+          "all": "gtlitecore:blocks/casings/glass/gst"
+        }
+      },
+      "thorium_yttrium": {
+        "model": "minecraft:cube_all",
+        "ambientocclusion": false,
+        "textures": {
+          "all": "gtlitecore:blocks/casings/glass/thorium_yttrium"
+        }
+      },
+      "silicon_carbide": {
+        "model": "minecraft:cube_all",
+        "ambientocclusion": false,
+        "textures": {
+          "all": "gtlitecore:blocks/casings/glass/silicon_carbide"
+        }
+      },
+      "woods": {
+        "model": "minecraft:cube_all",
+        "ambientocclusion": false,
+        "textures": {
+          "all": "gtlitecore:blocks/casings/glass/woods"
+        }
+      },
+      "lead_silicon": {
+        "model": "minecraft:cube_all",
+        "ambientocclusion": false,
+        "textures": {
+          "all": "gtlitecore:blocks/casings/glass/lead_silicon"
+        }
+      },
+      "quantum": {
+        "model": "minecraft:cube_all",
+        "ambientocclusion": false,
+        "textures": {
+          "all": "gtlitecore:blocks/casings/glass/quantum"
+        }
+      },
+      "force_field": {
+        "model": "minecraft:cube_bottom_top",
+        "ambientocclusion": false,
+        "textures": {
+          "top": "gtlitecore:blocks/casings/glass/force_field_top",
+          "side": "gtlitecore:blocks/casings/glass/force_field_side",
+          "bottom": "#top"
+        }
+      },
+      "antimatter_containment": {
+        "model": "minecraft:cube_all",
+        "ambientocclusion": false,
+        "textures": {
+          "all": "gtlitecore:blocks/casings/glass/antimatter_containment"
+        }
+      },
+      "greenhouse": {
+        "model": "minecraft:cube_all",
+        "ambientocclusion": false,
+        "textures": {
+          "all": "gtlitecore:blocks/casings/glass/greenhouse"
+        }
+      },
+      "chromatic": {
+        "model": "minecraft:cube_all",
+        "ambientocclusion": false,
+        "textures": {
+          "all": "gtlitecore:blocks/casings/glass/chromatic"
+        }
+      }
+    }
+  }
+}

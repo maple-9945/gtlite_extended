@@ -1,0 +1,73 @@
+{
+  "forge_marker": 1,
+  "variants": {
+    "variant": {
+      "cobalt_brass": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/metal/cobalt_brass"
+        }
+      },
+      "trinaquadalloy": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/metal/trinaquadalloy"
+        }
+      },
+      "osmiridium": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/metal/osmiridium"
+        }
+      },
+      "neutronium": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/metal/neutronium"
+        }
+      },
+      "naquadah_alloy": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/metal/naquadah_alloy"
+        }
+      },
+      "quantum_alloy": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/metal/quantum_alloy"
+        }
+      },
+      "inconel_718": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/metal/inconel_718"
+        }
+      },
+      "nitinol_60": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/metal/nitinol_60"
+        }
+      },
+      "lafium": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/metal/lafium"
+        }
+      },
+      "vanadium_gallium": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/metal/vanadium_gallium"
+        }
+      },
+      "tantalum_carbide": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/metal/tantalum_carbide"
+        }
+      }
+    }
+  }
+}

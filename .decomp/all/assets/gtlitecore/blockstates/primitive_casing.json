@@ -1,0 +1,13 @@
+{
+  "forge_marker": 1,
+  "variants": {
+    "variant": {
+      "reinforced_treated_wood_wall": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/primitive/reinforced_treated_wood_wall"
+        }
+      }
+    }
+  }
+}

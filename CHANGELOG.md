@@ -1,6 +1,9 @@
 # Changelog
 
-## [1.0.0] - 2023-09-15
+## [1.1.0]
 
-### Added
-- This is a default template changelog that follows the [KeepAChangelog Convention](https://keepachangelog.com/en/1.1.0/)
+### Fixed
+- 矿石处理机配方产出改为直接照抄 gtlitecore 集成矿石处理厂“模式1（研磨-洗矿(蒸馏水)-热力离心-研磨）”的产物：
+  物品与数量原样复制（含冰晶石粉这类 gtlitecore 命名空间的物品），几率产出按 100% 给 1 个。
+- 旧产物规则降级为兜底，仅在 gtlitecore 没有对应配方时使用；白名单补上 `gtlitecore` 命名空间，
+  冰晶石矿石不再只剩钠粉。

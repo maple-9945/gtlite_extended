@@ -1,0 +1,104 @@
+---- Minecraft Crash Report ----
+// You should try our sister game, Minceraft!
+
+Time: 10/25/26 4:04 PM
+Description: Exception ticking world
+
+java.util.ConcurrentModificationException
+	at java.util.HashMap$HashIterator.remove(HashMap.java:1483)
+	at net.minecraft.world.gen.ChunkProviderServer.tick(ChunkProviderServer.java:279)
+	at net.minecraft.world.WorldServer.tick(WorldServer.java:215)
+	at net.minecraft.server.MinecraftServer.updateTimeLightAndEntities(MinecraftServer.java:830)
+	at net.minecraft.server.MinecraftServer.tick(MinecraftServer.java:742)
+	at net.minecraft.server.integrated.IntegratedServer.tick(IntegratedServer.java:192)
+	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:591)
+	at java.lang.Thread.run(Thread.java:750)
+
+No Mixin Metadata is found in the Stacktrace.
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- Head --
+Thread: Server thread
+Stacktrace:
+	at java.util.HashMap$HashIterator.remove(HashMap.java:1483)
+	at net.minecraft.world.gen.ChunkProviderServer.tick(ChunkProviderServer.java:279)
+	at net.minecraft.world.WorldServer.tick(WorldServer.java:215)
+
+-- Affected level --
+Details:
+	Level name: New World
+	All players: 0 total; []
+	Chunk stats: ServerChunkCache: 346 Drop: 75
+	Level seed: 9208620811132133111
+	Level generator: ID 00 - default, ver 1. Features enabled: true
+	Level generator options: 
+	Level spawn location: World: (-188,64,248), Chunk: (at 4,4,8 in -12,15; contains blocks -192,0,240 to -177,255,255), Region: (-1,0; contains chunks -32,0 to -1,31, blocks -512,0,0 to -1,255,511)
+	Level time: 3959 game time, 3959 day time
+	Level dimension: 0
+	Level storage version: 0x04ABD - Anvil
+	Level weather: Rain time: 58452 (now: false), thunder time: 81248 (now: false)
+	Level game mode: Game mode: survival (ID 0). Hardcore: false. Cheats: true
+Stacktrace:
+	at net.minecraft.server.MinecraftServer.updateTimeLightAndEntities(MinecraftServer.java:830)
+	at net.minecraft.server.MinecraftServer.tick(MinecraftServer.java:742)
+	at net.minecraft.server.integrated.IntegratedServer.tick(IntegratedServer.java:192)
+	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:591)
+	at java.lang.Thread.run(Thread.java:750)
+
+-- System Details --
+Details:
+	Minecraft Version: 1.12.2
+	Operating System: Windows 11 (amd64) version 10.0
+	Java Version: 1.8.0_504, Azul Systems, Inc.
+	Java VM Version: OpenJDK 64-Bit Server VM (mixed mode), Azul Systems, Inc.
+	Memory: 2225674032 bytes (2122 MB) / 3686793216 bytes (3516 MB) up to 5726797824 bytes (5461 MB)
+	JVM Flags: 2 total; -Xms1G -Xmx6G
+	IntCache: cache: 0, tcache: 0, allocated: 13, tallocated: 95
+	FML: MCP 9.42 Powered by Forge 14.23.5.2847 15 mods loaded, 15 mods active
+	States: 'U' = Unloaded 'L' = Loaded 'C' = Constructed 'H' = Pre-initialized 'I' = Initialized 'J' = Post-initialized 'A' = Available 'D' = Disabled 'E' = Errored
+
+	| State  | ID                  | Version      | Source                                       | Signature |
+	|:------ |:------------------- |:------------ |:-------------------------------------------- |:--------- |
+	| LCHIJA | minecraft           | 1.12.2       | minecraft.jar                                | None      |
+	| LCHIJA | mcp                 | 9.42         | minecraft.jar                                | None      |
+	| LCHIJA | mixinbooter         | 10.7         | minecraft.jar                                | None      |
+	| LCHIJA | FML                 | 8.0.99.99    | recompiled_minecraft-1.12.2.jar              | None      |
+	| LCHIJA | forge               | 14.23.5.2847 | recompiled_minecraft-1.12.2.jar              | None      |
+	| LCHIJA | appliedenergistics2 | v0.56.7      | ae2-extended-life-570458-6302098-deobf.jar   | None      |
+	| LCHIJA | jei                 | 4.36.1       | had-enough-items-557549-9167450-deobf.jar    | None      |
+	| LCHIJA | modularui           | 3.0.6        | modularui-624243-7320544-deobf.jar           | None      |
+	| LCHIJA | codechickenlib      | 3.2.3.358    | codechicken-lib-1-8-242818-2779848-deobf.jar | None      |
+	| LCHIJA | gregtech            | 2.8.7-beta   | gregtech-1.12.2-master-2901-deobf.jar        | None      |
+	| LCHIJA | morphismlib         | 1.0.0        | morphismlib-1.12.2-1.0.0-deobf.jar           | None      |
+	| LCHIJA | gtlitecore          | 1.0.0        | gtlitecore-1.0.0-deobf.jar                   | None      |
+	| LCHIJA | gtlite_extended     | 1.1.0        | gtlite_extended-1.1.0-dev.jar                | None      |
+	| LCHIJA | forgelin_continuous | 2.2.20.0     | forgelin-continuous-456403-6983420-deobf.jar | None      |
+	| LCHIJA | forgelin            | 1.8.4        | forgelin-continuous-456403-6983420-deobf.jar | None      |
+
+	Loaded coremods (and transformers): 
+StripLatestForgeRequirements (strip-latest-forge-requirements-1.0-dev.jar)
+  
+Forgelin-Continuous (forgelin-continuous-456403-6983420-deobf.jar)
+  
+ModularUI-Core (modularui-624243-7320544-deobf.jar)
+  com.cleanroommc.modularui.core.ClassTransformer
+OSXNarratorBlocker (osxnarratorblocker-1.0-dev.jar)
+  
+AE2ELCore (ae2-extended-life-570458-6302098-deobf.jar)
+  appeng.core.transformer.AE2ELTransformer
+MixinBooter (mixinbooter-9.1.jar)
+  
+GregTech Lite Core (gtlitecore-1.0.0-deobf.jar)
+  
+GregTechMixinLoadingPlugin (gregtech-1.12.2-master-2901-deobf.jar)
+  
+	GL info: ~~ERROR~~ RuntimeException: No OpenGL context found in the current thread.
+	AE2 Version: stable v0.56.7 for Forge 14.23.5.2847
+	AE2 Integration: IC2:OFF, GTCE:ON, RC:OFF, MFR:OFF, Waila:OFF, InvTweaks:OFF, JEI:ON, Mekanism:OFF, OpenComputers:OFF, THE_ONE_PROBE:OFF, TESLA:OFF, CRAFTTWEAKER:OFF
+	Profiler Position: N/A (disabled)
+	Player Count: 0 / 8; []
+	Type: Integrated Server (map_client.txt)
+	Is Modded: Definitely; Client brand changed to 'fml,forge'

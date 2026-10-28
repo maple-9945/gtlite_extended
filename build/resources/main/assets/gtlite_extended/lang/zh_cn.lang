@@ -1,0 +1,6 @@
+recipemap.gtlite_extended:ore_processing.name=矿石处理
+recipemap.gtlite_extended:petrochemical.name=石化工厂
+gtlite_extended.machine.ore_processor.name=矿石处理机
+gtlite_extended.machine.petrochemical_plant.name=石化工厂
+item.gtlite_extended.chip_perfect_oc.name=无损超频芯片
+item.gtlite_extended.chip_advanced.name=高级模式芯片

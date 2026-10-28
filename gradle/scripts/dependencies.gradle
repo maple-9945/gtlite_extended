@@ -1,8 +1,6 @@
 apply from: 'gradle/scripts/helpers.gradle'
 
 repositories {
-    // Other repositories described by default:
-    // CleanroomMC: https://maven.cleanroommc.com
     exclusiveContent {
         forRepository {
             maven {
@@ -25,7 +23,7 @@ repositories {
             includeGroup 'maven.modrinth'
         }
     }
-    mavenLocal() // Must be last for caching to work
+    mavenLocal()
 }
 
 configurations {
@@ -34,93 +32,37 @@ configurations {
 }
 
 dependencies {
-    // Include StripLatestForgeRequirements by default for the dev env, saves everyone a hassle
     runtimeOnly 'com.cleanroommc:strip-latest-forge-requirements:1.0'
-    // Include OSXNarratorBlocker by default for the dev env, for M1+ Macs
     runtimeOnly 'com.cleanroommc:osxnarratorblocker:1.0'
 
-    // Example - Dependency descriptor:
-    // 'com.google.code.gson:gson:2.8.6' << group: com.google.code.gson, name:gson, version:2.8.6
-    // 'group:name:version:classifier' where classifier is optional
-
-    // Example - Deobfuscating dependencies:
-    // rfg.deobf('curse.maven:had-enough-items-557549:4543375')
-    // By wrapping a dependency descriptor in rfg.deobf() method call, the dependency is queued for deobfuscation
-    // When deobfuscating, RFG respects the mapping_channel + mapping_version stated in gradle.properties
-
-    // Example - Shading dependencies:
-    // Using the shadow plugin, by using the "shade" configuration, the dependency will be shaded into your output jar
-    // shade 'mezz:jei:4.31.2' << will shade HadEnoughItems 4.31.2 directly into your jar
-    // For more configuration options: see the bottom of this file and: https://gradleup.com/shadow/configuration/
-
-    // Example - CurseMaven dependencies:
-    // 'curse.maven:had-enough-items-557549:4543375' << had-enough-items = project slug, 557549 = project id, 4543375 = file id
-    // Full documentation: https://cursemaven.com/
-
-    // Example - Modrinth dependencies:
-    // 'maven.modrinth:jei:4.16.1.1000' << jei = project name, 4.16.1.1000 = file version
-    // Full documentation: https://docs.modrinth.com/docs/tutorials/maven/
-
-    // Common dependency types (configuration):
-    // implementation = dependency available at both compile time and runtime
-    // runtimeOnly = runtime dependency
-    // compileOnly = compile time dependency
-    // annotationProcessor = annotation processing dependencies
-    // shade = includes dependency in output
-
-    // Transitive dependencies:
-    // (Dependencies that your dependency depends on)
-    // If you wish to exclude transitive dependencies in the described dependencies
-    // Use a closure as such:
-    // implementation ('com.google.code.gson:gson:2.8.6') {
-    //     transitive = false
-    // }
-
-    // ==================== GTCEu / GTLite Core（本地 jar，独立于 omnitool） ====================
-    // GTCEu：整合包随包的 master-#2901 自编译构建（CurseForge 5121638 版本过旧，缺 GTLite Core 依赖的类）
+    // GTCEu（GTLite 整合包随包自编译构建，mcmod.info 版本 2.8.7-beta）
     implementation rfg.deobf(files('libs/gregtech-1.12.2-master-2901.jar'))
-    compileOnly files('libs/groovyscript-1.4.3.jar')
-    compileOnly files('libs/CTM-MC1.12.2-1.0.2.31.jar')
-
-    // GregTech Lite Core 1.0.0（CurseForge 未发布，使用整合包仓库随包 jar）
+    // GregTech Lite Core
     implementation rfg.deobf(files('libs/gtlitecore-1.0.0.jar'))
-
-    // Morphism Lib 1.0.0：GTLite Core 的 Meta 物品渲染依赖
+    // Morphism Lib（GTLite Core 的 Meta 物品渲染依赖）
     implementation rfg.deobf(files('libs/morphismlib-1.12.2-1.0.0.jar'))
 
-    // ==================== GTCEu / GTLite Core 的运行期依赖 ====================
-    // AE2 UEL：GTLite Core 的 MixinMetaTileEntityHolder 引用 AE2 的 ICraftingProvider
-    implementation rfg.deobf('curse.maven:ae2-extended-life-570458:6302098')
-
-    // Had Enough Items：GTLite Core 的 MCPotions 引用 JEI 的 BrewingRecipeUtil
+    // Had Enough Items（JEI 分支，modid=jei）4.36.1
     implementation rfg.deobf('curse.maven:had-enough-items-557549:9167450')
-
-    // Forgelin Continuous：GTLite Core 是 Kotlin 编写，需要 Kotlin 运行时
-    implementation rfg.deobf('curse.maven:forgelin-continuous-456403:6983420')
-
-    // ModularUI：GTLite Core 的 mcmod.info 依赖
-    implementation rfg.deobf('curse.maven:modularui-624243:7320544')
-
-    // MixinBooter：GTLite Core 的 EarlyMixinLoader 实现 IEarlyMixinLoader
-    implementation rfg.deobf('curse.maven:mixin-booter-419286:7049694')
-
-    // CodeChickenLib：GTCEu 的 mcmod.info 依赖
+    // CodeChickenLib（GTCEu 的 mcmod.info 声明依赖）
     implementation rfg.deobf('curse.maven:codechicken-lib-1-8-242818:2779848')
+    // ModularUI（GT 的 RecipeMapMultiblockController implements com.cleanroommc.modularui.api.IGuiHolder）
+    implementation rfg.deobf('curse.maven:modularui-624243:7320544')
+    // Forgelin Continuous（提供 Kotlin 运行时，GTLite Core 是 Kotlin 写的）
+    implementation rfg.deobf('curse.maven:forgelin-continuous-456403:6983420')
+    // MixinBooter（GTLite Core 的 EarlyMixinLoader 实现 zone.rong.mixinbooter.IEarlyMixinLoader）
+    implementation rfg.deobf('curse.maven:mixin-booter-419286:7049694')
+    // Applied Energistics 2 Extended Life（GTLite Core 的 MixinMetaTileEntityHolder 直接引用 AE2 类）
+    implementation rfg.deobf('curse.maven:ae2-extended-life-570458:6302098')
 }
 
-// Need reobfJar to use uber jars, so dependencies that are shaded in are present
-// Only redirect reobfJar through shadowJar when there's actually something to shade
 if (!configurations.shade.dependencies.empty) {
     tasks.named('reobfJar').configure {
         inputJar.set(tasks.named('shadowJar').flatMap({ it.archiveFile }))
     }
 }
 
-// By default, it will use a "uberdev" suffix, and only pack shade configuration dependencies
-// Uberdev: dev jar w/ dependencies, NOT a reobfuscated artifact!
-// The end result (reobfJar) will have a non-suffixed name, as unlike normal shading envs, reobfJar is the end task
 tasks.shadowJar {
-    // Shadow wires shadowJar into the assemble task, so it runs even when nothing is shaded
     enabled = !project.configurations.shade.dependencies.empty
     archiveClassifier = 'uberdev'
     configurations = [ project.configurations.shade ]

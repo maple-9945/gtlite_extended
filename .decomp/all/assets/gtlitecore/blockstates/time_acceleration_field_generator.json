@@ -1,0 +1,61 @@
+{
+  "forge_marker": 1,
+  "variants": {
+    "variant": {
+      "crude": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/time_acceleration_field_generator/crude"
+        }
+      },
+      "primitive": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/time_acceleration_field_generator/primitive"
+        }
+      },
+      "stable": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/time_acceleration_field_generator/stable"
+        }
+      },
+      "advanced": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/time_acceleration_field_generator/advanced"
+        }
+      },
+      "superb": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/time_acceleration_field_generator/superb"
+        }
+      },
+      "exotic": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/time_acceleration_field_generator/exotic"
+        }
+      },
+      "perfect": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/time_acceleration_field_generator/perfect"
+        }
+      },
+      "tipler": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/time_acceleration_field_generator/tipler"
+        }
+      },
+      "gallifreyan": {
+        "model": "minecraft:cube_all",
+        "textures": {
+          "all": "gtlitecore:blocks/casings/time_acceleration_field_generator/gallifreyan"
+        }
+      }
+    }
+  }
+}
