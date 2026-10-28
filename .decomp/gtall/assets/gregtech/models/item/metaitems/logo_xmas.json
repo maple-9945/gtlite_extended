@@ -1,6 +1,0 @@
-{
-  "parent": "gregtech:item/metaitems/logo",
-  "textures": {
-    "layer0": "gregtech:items/metaitems/gregtech_logo_xmas"
-  }
-}

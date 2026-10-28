@@ -1,6 +1,0 @@
-{
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "gtlitecore:blocks/misc/dust_block"
-  }
-}

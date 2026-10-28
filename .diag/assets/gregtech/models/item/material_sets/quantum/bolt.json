@@ -1,7 +1,0 @@
-{
-  "parent": "item/generated",
-  "textures": {
-    "layer0": "gregtech:items/material_sets/quantum/bolt",
-    "layer1": "gregtech:items/material_sets/quantum/bolt_overlay"
-  }
-}

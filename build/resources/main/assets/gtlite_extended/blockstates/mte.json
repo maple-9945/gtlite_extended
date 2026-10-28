@@ -1,7 +1,0 @@
-{
-  "variants": {
-    "opaque=true": { "model": "gtlite_extended:mte" },
-    "opaque=false": { "model": "gtlite_extended:mte" },
-    "inventory": { "model": "gtlite_extended:mte" }
-  }
-}

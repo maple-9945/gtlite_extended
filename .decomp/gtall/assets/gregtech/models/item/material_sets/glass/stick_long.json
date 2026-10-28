@@ -1,6 +1,0 @@
-{
-  "parent": "gregtech:item/material_sets/shiny/stick_long",
-  "textures": {
-    "layer1": "gregtech:items/material_sets/glass/stick_long_overlay"
-  }
-}
