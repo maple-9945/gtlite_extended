@@ -20,6 +20,7 @@ import org.apache.logging.log4j.Logger;
 )
 public class GTLiteExtended {
 
+
     public static final Logger LOGGER = LogManager.getLogger(Tags.MOD_NAME);
 
     @SidedProxy(clientSide = "com.gtlite.extended.proxy.ClientProxy",
