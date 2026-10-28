@@ -1,0 +1,65 @@
+name: Build
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download dev jars (GTCEu / GTLite Core / Morphism Lib)
+        run: |
+          set -euo pipefail
+          mkdir -p libs
+          BASE="https://raw.githubusercontent.com/GregTechLite/GregTech-Lite-Modpack/main/mods"
+
+          curl -fsSL --retry 5 --retry-delay 3 -o "libs/gregtech-1.12.2-master-2901.jar" "$BASE/gregtech-1.12.2-master-%232901.jar"
+          curl -fsSL --retry 5 --retry-delay 3 -o "libs/gtlitecore-1.0.0.jar" "$BASE/gtlitecore-1.0.0.jar"
+          curl -fsSL --retry 5 --retry-delay 3 -o "libs/morphismlib-1.12.2-1.0.0.jar" "$BASE/morphismlib-1.12.2-1.0.0.jar"
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Remove local gradle properties
+        run: |
+          sed -i '' '/^[[:space:]]*org\.gradle\.java\.home[[:space:]]*=/d' gradle.properties || true
+
+      - name: Patch dependencies for CI
+        run: |
+          sed -i '' '/groovyscript-1.4.3.jar/d' gradle/scripts/dependencies.gradle || true
+          sed -i '' '/CTM-MC1.12.2-1.0.2.31.jar/d' gradle/scripts/dependencies.gradle || true
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        run: |
+          export GRADLE_OPTS="-Dorg.gradle.java.home=${JAVA_HOME} ${GRADLE_OPTS:-}"
+          ./gradlew build --no-daemon --stacktrace
+
+      - name: Upload jars
+        uses: actions/upload-artifact@v4
+        with:
+          name: gtlite_extended-jars
+          path: build/libs/*.jar
+          if-no-files-found: error
