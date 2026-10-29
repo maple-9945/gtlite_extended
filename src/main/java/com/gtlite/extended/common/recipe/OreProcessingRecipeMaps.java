@@ -2,6 +2,8 @@ package com.gtlite.extended.common.recipe;
 
 import com.gtlite.extended.GTLiteExtended;
 import gregtech.api.GregTechAPI;
+import gregtech.api.capability.impl.FluidTankList;
+import gregtech.api.gui.ModularUI;
 import gregtech.api.recipes.Recipe;
 import gregtech.api.recipes.RecipeMap;
 import gregtech.api.recipes.RecipeMaps;
@@ -17,16 +19,20 @@ import gregtech.api.unification.material.Materials;
 import gregtech.api.unification.material.properties.OreProperty;
 import gregtech.api.unification.material.properties.PropertyKey;
 import gregtech.api.unification.ore.OrePrefix;
+import gregtech.api.unification.stack.MaterialStack;
 import gregtechlite.gtlitecore.api.recipe.GTLiteRecipeMaps;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.items.IItemHandlerModifiable;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,10 +42,16 @@ import java.util.Map;
  * <p>规则（全mod只有这一套配方，运行时机器与 JEI 读的都是同一个 {@link #ORE_PROCESSING}）：</p>
  * <ul>
  *     <li>输入：任意 GT 矿石前缀（ore / oreGranite / oreNetherrack / oreEndstone ...）+ 1000mB 水；</li>
- *     <li><b>产物直接照抄 gtlitecore 集成矿石处理厂“模式1（研磨-洗矿(蒸馏水)-热力离心-研磨）”的配方</b>
- *         （见 {@link #copyGtliteOutputs}）：主产物、副产物、宝石、甚至冰晶石这类由 gtlitecore
- *         自己注册的物品，全部按 gtlite 配方里的物品和数量原样复制，不再自己推导。
- *         抄的时候忽略几率：我们的机器是 100% 产出，所以 gtlite 的几率产出在这里各给 1 个；</li>
+ *     <li><b>产物直接照抄 gtlitecore 集成矿石处理厂的配方并集</b>（见 {@link #copyGtliteOutputs}）：
+ *         gtlite 的集成矿石处理厂有 10 种模式（编程电路 1~10），这里把同一块矿石
+ *         <b>所有模式</b>的产物合并成一份：每种物品只出现一次、数量取各模式中的最大值
+ *         （所以主产物数量保持原样、不会因为并集翻倍），几率产出一律按 100% 给 1 个。
+ *         主产物、宝石、副产物、甚至冰晶石这类由 gtlitecore 自己注册的物品都原样保留，
+ *         不再自己推导；</li>
+ *     <li><b>品级折算</b>（见 {@link #convertLowGradeGemsAndPureDust}）：并集里的
+ *         有瑕宝石（gemFlawed）、破碎宝石（gemChipped）和纯净的粉（dustPure）
+ *         全部折算成<b>同材料、同数量</b>的粉，并累加到该材料的粉里——所以最终配方里
+ *         只会看到普通粉、完整品级的宝石和副产物；</li>
  *     <li>只有 gtlite 没有这条矿石的配方时，才退回旧的兜底规则（见 {@link #buildOutputs}）：
  *         主产物粉（{@code max(4, resolvePrimaryAmount(...))}）→ 宝石变体 gem/gemExquisite/gemFlawless
  *         各 1 → 副产物粉；超过 {@link #OUTPUT_SLOTS} 个槽位时从<b>末尾</b>截断；</li>
@@ -62,11 +74,11 @@ public final class OreProcessingRecipeMaps {
     /**
      * 产出槽位上限：机器、配方表与产物构建共用这一个数字。
      *
-     * <p>抄 gtlite 配方时按“普通产出 → 几率产出”的顺序占槽，超槽从末尾截断（只丢几率产出）；
-     * 走旧兜底规则时顺序是“主产物粉 → 宝石变体 → 副产物粉”，超槽同样从末尾截断，
-     * 因此被丢掉的永远是副产物，不会是主产物。</p>
+     * <p>抄 gtlite 配方时按“主产物粉 → 宝石变体 → 其余副产物”的顺序占槽，超槽从末尾截断
+     * （丢的永远是副产物）；走旧兜底规则时顺序是“主产物粉 → 宝石变体 → 副产物粉”，
+     * 超槽同样从末尾截断。</p>
      */
-    public static final int OUTPUT_SLOTS = 12;
+    public static final int OUTPUT_SLOTS = 16;
 
     /** 排查日志里每条配方最多展示的产物种类数，超过就截断并告警。 */
     private static final int LOG_MAX_OUTPUTS = 12;
@@ -88,20 +100,14 @@ public final class OreProcessingRecipeMaps {
     private static final int DOUBLED_MULTIPLIER = 2;
 
     /**
-     * gtlitecore 集成矿石处理厂的“模式1”电路号：研磨 → 洗矿（蒸馏水）→ 热力离心 → 研磨。
+     * 矿石物品（{@code registry@meta}）→ gtlitecore 集成矿石处理厂的<b>全部模式</b>配方列表。
      *
-     * <p>该模式是 gtlite 的标准矿石处理流程（其余模式要额外的层岩/清风等流体），
-     * 也是本 mod 唯一抄取的产物来源。</p>
+     * <p>gtlite 的集成矿石处理厂有 10 种模式（编程电路 1~10，对应研磨/洗矿/热力离心/筛选/化学浸洗
+     * 等不同流程）。这里不再只取模式1，而是把同一块矿石的所有模式都收进来，生成产物时取<b>并集</b>：
+     * 每种物品只出现一次，数量取各模式中的<b>最大值</b>（所以主产物数量不会因为并集翻倍），
+     * 几率产出一律按 100% 给 1 个。</p>
      */
-    private static final int GTLITE_BASE_CIRCUIT = 1;
-
-    /**
-     * 矿石物品（{@code registry@meta}）→ gtlitecore 集成矿石处理厂“模式1”的配方。
-     *
-     * <p>索引只收电路为 {@link #GTLITE_BASE_CIRCUIT} 的配方；同一个矿石物品被多个配方命中时
-     * 保留最先注册的那条（{@code putIfAbsent}）。</p>
-     */
-    private static final Map<String, Recipe> GTLITE_RECIPES = new HashMap<>();
+    private static final Map<String, List<Recipe>> GTLITE_RECIPES = new HashMap<>();
 
     /**
      * 研磨机“单输入矿石配方”的主产物数量索引：物品 key → 普通产物的数量。
@@ -130,8 +136,45 @@ public final class OreProcessingRecipeMaps {
     public static final RecipeMap<SimpleRecipeBuilder> ORE_PROCESSING = new RecipeMap<>(
             "gtlite_extended:ore_processing",
             new SimpleRecipeBuilder(),
-            map -> new RecipeMapUI<>(map, true, true, true, true, false),
+            OreProcessingUI::new,
             MAX_INPUTS, OUTPUT_SLOTS, MAX_FLUID_INPUTS, MAX_FLUID_OUTPUTS);
+
+    /**
+     * 矿石处理专用界面：输出最多 {@link #OUTPUT_SLOTS}=16 个物品槽，
+     * GT 默认布局会算出 4×4 网格并把起始 y 算成 -3（第一行跑到 JEI 分类外面）。
+     * 这里改成固定 4 列、从 y=8 开始向下排，最底一行 80，整块落在 JEI 分类高度（110）以内；
+     * 输入侧保持 GT 默认布局（1 个矿石物品 + 1 个水槽）。
+     */
+    private static final class OreProcessingUI extends RecipeMapUI<RecipeMap<SimpleRecipeBuilder>> {
+
+        @SuppressWarnings("unchecked")
+        private OreProcessingUI(RecipeMap<?> recipeMap) {
+            super((RecipeMap<SimpleRecipeBuilder>) recipeMap, true, true, true, true, false);
+        }
+
+        @Override
+        protected void addInventorySlotGroup(ModularUI.Builder builder, IItemHandlerModifiable itemHandler,
+                                             FluidTankList fluidHandler, boolean isOutputs, int yOffset) {
+            if (!isOutputs) {
+                super.addInventorySlotGroup(builder, itemHandler, fluidHandler, false, yOffset);
+                return;
+            }
+            int itemCount = itemHandler.getSlots();
+            int fluidCount = fluidHandler.getTanks();
+            int columns = 4;
+            int startX = 100;
+            int startY = 8 + yOffset;
+            for (int i = 0; i < itemCount; i++) {
+                addSlot(builder, startX + 18 * (i % columns), startY + 18 * (i / columns),
+                        i, itemHandler, fluidHandler, false, true);
+            }
+            for (int i = 0; i < fluidCount; i++) {
+                int cell = itemCount + i;
+                addSlot(builder, startX + 18 * (cell % columns), startY + 18 * (cell / columns),
+                        i, itemHandler, fluidHandler, true, true);
+            }
+        }
+    }
 
     /**
      * JEI 分类必须是配方表自己的 primary 分类。
@@ -189,7 +232,7 @@ public final class OreProcessingRecipeMaps {
                     continue;
                 }
 
-                // 产物只抄 gtlitecore 集成矿石处理厂（模式1）的配方；抄不到才退回旧的兜底规则
+                // 产物抄 gtlitecore 集成矿石处理厂全部模式的并集；抄不到才退回旧的兜底规则
                 List<ItemStack> outputs = copyGtliteOutputs(prefix, material);
                 boolean copied = outputs != null;
                 if (copied) {
@@ -228,9 +271,9 @@ public final class OreProcessingRecipeMaps {
 
         GTLiteExtended.LOGGER.info(
                 "[GTLite Extended] ore_processing: materials={} prefixes={} attempted={} registered={} failed={} "
-                        + "copied(gtlite 模式{})={} fallback(legacy)={} dropped(no output)={} total={}",
+                        + "copied(gtlite 全模式并集)={} fallback(legacy)={} dropped(no output)={} total={}",
                 materials, orePrefixes.size(), attempted, registered, failed,
-                GTLITE_BASE_CIRCUIT, copiedFromGtlite, legacyFallback, dropped, recipeCount());
+                copiedFromGtlite, legacyFallback, dropped, recipeCount());
         if (GTLITE_RECIPES.isEmpty()) {
             GTLiteExtended.LOGGER.warn("[GTLite Extended] 没有读到 gtlitecore 集成矿石处理配方，本次全部按旧规则生成产物");
         }
@@ -352,8 +395,7 @@ public final class OreProcessingRecipeMaps {
                 samplePrimaryAmount(Materials.Lapis),
                 samplePrimaryAmount(Materials.Redstone),
                 samplePrimaryAmount(Materials.Coal));
-        GTLiteExtended.LOGGER.info("[GTLite Extended] 产出抽样(ore，抄 gtlite 模式{}/旧规则兜底): emerald=[{}] diamond=[{}] iron=[{}] redstone=[{}]",
-                GTLITE_BASE_CIRCUIT,
+        GTLiteExtended.LOGGER.info("[GTLite Extended] 产出抽样(ore，抄 gtlite 全模式并集/旧规则兜底): emerald=[{}] diamond=[{}] iron=[{}] redstone=[{}]",
                 describeOutputs(Materials.Emerald),
                 describeOutputs(Materials.Diamond),
                 describeOutputs(Materials.Iron),
@@ -434,18 +476,19 @@ public final class OreProcessingRecipeMaps {
         return materials;
     }
 
-    // ── gtlitecore 集成矿石处理厂（模式1）产物照抄 ──────────────────────────────
+    // ── gtlitecore 集成矿石处理厂（全部模式并集）产物照抄 ────────────────────────
 
     /**
-     * 建立“矿石物品（{@code registry@meta}）→ gtlitecore 集成矿石处理厂模式1 配方”的索引。
+     * 建立“矿石物品（{@code registry@meta}）→ gtlitecore 集成矿石处理厂全部模式配方”的索引。
      *
      * <p>gtlitecore 的 {@code IntegratedOreProcessorRecipeProducer} 在
-     * {@code RegistryEvent.Register<IRecipe>}（LOW 优先级）阶段为每种矿石 × 每种模式各注册一条配方，
-     * 时间早于本类所在的 {@code FMLLoadCompleteEvent}，所以这里读到的是最终配方。</p>
+     * {@code RegistryEvent.Register<IRecipe>}（LOW 优先级）阶段为每种矿石 × 每种模式
+     * （编程电路 1~10）各注册一条配方，时间早于本类所在的 {@code FMLLoadCompleteEvent}，
+     * 所以这里读到的是最终配方。</p>
      *
-     * <p>只收电路为 {@link #GTLITE_BASE_CIRCUIT} 的配方；一个配方里的物品输入可能有多个
-     * （矿石 + 电路，个别模式还有额外物品），这里把非电路输入的每个候选物品都登记一次，
-     * 用 {@code putIfAbsent} 保留最先注册的配方。</p>
+     * <p>这里不再按电路筛选，而是把<b>所有模式</b>都收进同一个列表；一个配方里的物品输入
+     * 可能有多个（矿石 + 电路，个别模式还有额外物品），这里把非电路输入的每个候选物品登记一次。
+     * 生成产物时对列表里的每条配方取并集（见 {@link #copyGtliteOutputs}）。</p>
      */
     private static void indexGtliteRecipes() {
         GTLITE_RECIPES.clear();
@@ -457,12 +500,9 @@ public final class OreProcessingRecipeMaps {
                     continue;
                 }
                 scanned++;
-                if (!isGtliteBaseCircuit(recipe)) {
-                    continue;
-                }
                 for (GTRecipeInput input : recipe.getInputs()) {
                     if (input instanceof IntCircuitIngredient) {
-                        // 电路不是矿石输入，跳过
+                        // 电路只决定模式，不是矿石输入，跳过
                         continue;
                     }
                     ItemStack[] stacks = input.getInputStacks();
@@ -473,13 +513,16 @@ public final class OreProcessingRecipeMaps {
                         if (stack == null || stack.isEmpty()) {
                             continue;
                         }
-                        GTLITE_RECIPES.putIfAbsent(stackKey(stack), recipe);
+                        List<Recipe> list = GTLITE_RECIPES.computeIfAbsent(stackKey(stack), key -> new ArrayList<>());
+                        if (!list.contains(recipe)) {
+                            list.add(recipe);
+                        }
                     }
                 }
             }
             GTLiteExtended.LOGGER.info(
-                    "[GTLite Extended] gtlitecore 集成矿石处理配方索引: 扫描 {} 条 → 模式{} 覆盖 {} 种矿石物品",
-                    scanned, GTLITE_BASE_CIRCUIT, GTLITE_RECIPES.size());
+                    "[GTLite Extended] gtlitecore 集成矿石处理配方索引: 扫描 {} 条 → 覆盖 {} 种矿石物品（全部模式并集）",
+                    scanned, GTLITE_RECIPES.size());
         } catch (Throwable t) {
             GTLITE_RECIPES.clear();
             GTLiteExtended.LOGGER.warn(
@@ -487,32 +530,19 @@ public final class OreProcessingRecipeMaps {
         }
     }
 
-    /** 配方是否使用 {@link #GTLITE_BASE_CIRCUIT} 号电路。 */
-    private static boolean isGtliteBaseCircuit(Recipe recipe) {
-        for (GTRecipeInput input : recipe.getInputs()) {
-            if (!(input instanceof IntCircuitIngredient)) {
-                continue;
-            }
-            ItemStack[] stacks = input.getInputStacks();
-            if (stacks == null || stacks.length == 0 || stacks[0] == null || stacks[0].isEmpty()) {
-                continue;
-            }
-            // 电路编号存在物品 NBT 的 Configuration 里
-            return IntCircuitIngredient.getCircuitConfiguration(stacks[0]) == GTLITE_BASE_CIRCUIT;
-        }
-        return false;
-    }
-
     /**
-     * 照抄 gtlitecore 集成矿石处理厂“模式1”对该矿石的产物。
+     * 取 gtlitecore 集成矿石处理厂对该矿石<b>全部模式</b>的产物并集。
      *
-     * <p>复制规则（<b>不做任何推导、不过滤命名空间</b>）：</p>
+     * <p>并集规则（<b>不做任何推导、不过滤命名空间</b>）：</p>
      * <ul>
-     *     <li>普通产出：物品与数量原样复制（冰晶石粉就是 {@code gtlitecore:meta_dust@2041}，
-     *         以前被命名空间白名单丢掉，现在原样保留）；</li>
-     *     <li>几率产出：我们的机器是 <b>100% 产出</b>，所以每条几率产出按 1 个计入；</li>
-     *     <li>同一物品（{@code registry@meta} 相同）合并数量；超过 {@link #OUTPUT_SLOTS} 个槽位
-     *         时从末尾截断（抄来的普通产出在前，几率产出在后，只会丢几率产出）。</li>
+     *     <li>同一物品（{@code registry@meta} 相同）只占一个槽位，数量取各模式中的<b>最大值</b>，
+     *         不累加——这样主产物粉的数量保持各模式原本的数量，不会因为并集翻倍；</li>
+     *     <li>几率产出一律按 <b>100%</b> 计 1 个（本机器 100% 产出）；</li>
+     *     <li>有瑕/破碎宝石与纯净的粉在并集之后折算成同材料同数量的粉
+     *         （见 {@link #convertLowGradeGemsAndPureDust}）；</li>
+     *     <li>槽位顺序：主产物粉 → 该材料的宝石变体（gem / gemExquisite / gemFlawless）→
+     *         其余副产物；超过 {@link #OUTPUT_SLOTS} 个槽位时从末尾截断，
+     *         所以被丢掉的永远是副产物。</li>
      * </ul>
      *
      * <p><b>石种变体为什么回退到基础矿石：</b>gtlite 的 {@code IntegratedOreProcessorRecipeProducer}
@@ -520,7 +550,7 @@ public final class OreProcessingRecipeMaps {
      * 本整合包该配置是 {@code false}，所以 gtlite 自己只注册了 ore / oreNetherrack / oreEndstone 三种。
      * 而 gtlite 生成产物时始终以<b>基础矿石（{@link OrePrefix#ore}）</b>为起点模拟整条处理链，
      * 石种前缀只是把同一份产物再注册一遍、数量乘上该前缀的倍率（石种 = 1，下界岩 = 2，末地石 = 4）。
-     * 因此这里在“该前缀没有配方”时直接抄基础矿石的配方，并按同一倍率换算数量，
+     * 因此这里在“该前缀没有配方”时直接抄基础矿石的并集，并按同一倍率换算数量，
      * 产物与 gtlite 自己会生成的完全一致。</p>
      *
      * @return 产物列表；gtlitecore 没有这条矿石的配方时返回 {@code null}（调用方回退旧规则）
@@ -534,42 +564,155 @@ public final class OreProcessingRecipeMaps {
             return null;
         }
 
-        Recipe recipe = GTLITE_RECIPES.get(stackKey(oreStack));
+        List<Recipe> recipes = GTLITE_RECIPES.get(stackKey(oreStack));
         int countMultiplier = 1;
-        if (recipe == null) {
-            // 石种前缀在 gtlite 的配方表里可能没有条目：抄基础矿石的同一份产物，按前缀倍率换算数量
+        if (recipes == null || recipes.isEmpty()) {
+            // 石种前缀在 gtlite 的配方表里可能没有条目：抄基础矿石的同一份并集，按前缀倍率换算数量
             ItemStack baseOre = OreDictUnifier.get(OrePrefix.ore, material);
             if (baseOre.isEmpty() || stackKey(baseOre).equals(stackKey(oreStack))) {
                 return null;
             }
-            recipe = GTLITE_RECIPES.get(stackKey(baseOre));
-            if (recipe == null) {
+            recipes = GTLITE_RECIPES.get(stackKey(baseOre));
+            if (recipes == null || recipes.isEmpty()) {
                 return null;
             }
             countMultiplier = gtliteProductMultiplier(prefix);
         }
 
-        List<ItemStack> outputs = new ArrayList<>(OUTPUT_SLOTS);
-        for (ItemStack output : recipe.getOutputs()) {
-            addCopiedOutput(outputs, output, output.getCount() * countMultiplier);
-        }
-        for (ChancedItemOutput chanced : recipe.getChancedOutputs().getChancedEntries()) {
-            if (chanced == null) {
-                continue;
+        // 并集：同一物品只留一个槽位，数量取各模式最大值（主产物数量因此保持不变）
+        Map<String, ItemStack> merged = new LinkedHashMap<>();
+        for (Recipe recipe : recipes) {
+            for (ItemStack output : recipe.getOutputs()) {
+                mergeMax(merged, output, output.getCount() * countMultiplier);
             }
-            // 机器 100% 产出：几率只影响“抄不抄”，这里照样给 1 个
-            addCopiedOutput(outputs, chanced.getIngredient(), 1);
+            for (ChancedItemOutput chanced : recipe.getChancedOutputs().getChancedEntries()) {
+                if (chanced == null) {
+                    continue;
+                }
+                // 机器 100% 产出：几率产出一律给 1 个
+                mergeMax(merged, chanced.getIngredient(), 1);
+            }
         }
-
-        if (outputs.isEmpty()) {
+        if (merged.isEmpty()) {
             return null;
         }
-        if (outputs.size() > OUTPUT_SLOTS) {
+
+        // 有瑕/破碎宝石、纯净的粉 → 同材料同数量的粉
+        convertLowGradeGemsAndPureDust(merged);
+
+        List<ItemStack> ordered = orderProducts(merged, material);
+        if (ordered.size() > OUTPUT_SLOTS) {
             GTLiteExtended.LOGGER.warn("[GTLite Extended] {} 抄自 gtlite 的产出 {} 种超过 {} 个槽位，末尾被截断",
-                    material.getName(), outputs.size(), OUTPUT_SLOTS);
-            return new ArrayList<>(outputs.subList(0, OUTPUT_SLOTS));
+                    material.getName(), ordered.size(), OUTPUT_SLOTS);
+            return new ArrayList<>(ordered.subList(0, OUTPUT_SLOTS));
         }
-        return outputs;
+        return ordered;
+    }
+
+    /**
+     * 并集合并：同一物品只占一个槽位，数量取最大值（不累加，保证主产物数量不变）。
+     */
+    private static void mergeMax(Map<String, ItemStack> merged, ItemStack stack, int amount) {
+        if (stack == null || stack.isEmpty()) {
+            return;
+        }
+        int count = Math.min(Math.max(1, amount), stack.getMaxStackSize());
+        String key = stackKey(stack);
+        ItemStack existing = merged.get(key);
+        if (existing == null) {
+            ItemStack copy = stack.copy();
+            copy.setCount(count);
+            merged.put(key, copy);
+        } else if (count > existing.getCount()) {
+            existing.setCount(count);
+        }
+    }
+
+    /**
+     * 把“有瑕宝石（gemFlawed）/ 破碎宝石（gemChipped）/ 纯净的粉（dustPure）”折算成
+     * <b>同材料、同数量</b>的粉（dust），并累加到并集里对应的粉上。
+     *
+     * <p>例：某个材料并集里是「粉 x2、有瑕宝石 x1、破碎宝石 x1、纯净粉 x1」，
+     * 折算后只剩「粉 x5」。找不到对应粉物品时保留原物品，不会凭空丢产物。</p>
+     *
+     * <p>数量用<b>累加</b>而不是取最大值：这些品级本来就是同一份材料的不同形态，
+     * 折算成粉后应当并入主产物粉的数量。</p>
+     */
+    private static void convertLowGradeGemsAndPureDust(Map<String, ItemStack> merged) {
+        if (merged.isEmpty()) {
+            return;
+        }
+        List<ItemStack> converted = new ArrayList<>();
+        Iterator<Map.Entry<String, ItemStack>> iterator = merged.entrySet().iterator();
+        while (iterator.hasNext()) {
+            ItemStack stack = iterator.next().getValue();
+            OrePrefix prefix = OreDictUnifier.getPrefix(stack);
+            if (prefix != OrePrefix.gemFlawed
+                    && prefix != OrePrefix.gemChipped
+                    && prefix != OrePrefix.dustPure) {
+                continue;
+            }
+            MaterialStack materialStack = OreDictUnifier.getMaterial(stack);
+            Material material = materialStack == null ? null : materialStack.material;
+            if (material == null) {
+                continue;
+            }
+            ItemStack dust = OreDictUnifier.get(OrePrefix.dust, material, stack.getCount());
+            if (dust.isEmpty()) {
+                continue;
+            }
+            iterator.remove();
+            converted.add(dust);
+        }
+        for (ItemStack dust : converted) {
+            mergeAdd(merged, dust, dust.getCount());
+        }
+    }
+
+    /**
+     * 数量累加合并：与 {@link #mergeMax} 不同，这里把数量加到已有槽位上
+     * （用于把折算出来的粉并入主产物粉）。
+     */
+    private static void mergeAdd(Map<String, ItemStack> merged, ItemStack stack, int amount) {
+        if (stack == null || stack.isEmpty()) {
+            return;
+        }
+        int total = Math.max(1, amount);
+        String key = stackKey(stack);
+        ItemStack existing = merged.get(key);
+        if (existing == null) {
+            ItemStack copy = stack.copy();
+            copy.setCount(Math.min(total, copy.getMaxStackSize()));
+            merged.put(key, copy);
+        } else {
+            existing.setCount(Math.min(existing.getCount() + total, existing.getMaxStackSize()));
+        }
+    }
+
+    /**
+     * 产物的槽位顺序：主产物粉 → 该材料的宝石变体 → 其余副产物（并集里先出现的先放）。
+     */
+    private static List<ItemStack> orderProducts(Map<String, ItemStack> merged, Material material) {
+        List<ItemStack> ordered = new ArrayList<>(merged.size());
+        addOrdered(ordered, merged, OreDictUnifier.get(OrePrefix.dust, material));
+        addOrdered(ordered, merged, OreDictUnifier.get(OrePrefix.gem, material));
+        addOrdered(ordered, merged, OreDictUnifier.get(OrePrefix.gemExquisite, material));
+        addOrdered(ordered, merged, OreDictUnifier.get(OrePrefix.gemFlawless, material));
+        addOrdered(ordered, merged, OreDictUnifier.get(OrePrefix.gemFlawed, material));
+        addOrdered(ordered, merged, OreDictUnifier.get(OrePrefix.gemChipped, material));
+        ordered.addAll(merged.values());
+        return ordered;
+    }
+
+    /** 把指定物品从并集里挪到有序列表的末尾（不存在就跳过）。 */
+    private static void addOrdered(List<ItemStack> ordered, Map<String, ItemStack> merged, ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return;
+        }
+        ItemStack value = merged.remove(stackKey(stack));
+        if (value != null) {
+            ordered.add(value);
+        }
     }
 
     /**
@@ -585,27 +728,6 @@ public final class OreProcessingRecipeMaps {
             return DOUBLED_MULTIPLIER * DOUBLED_MULTIPLIER;
         }
         return 1;
-    }
-
-    /**
-     * 追加一个“抄来的”产出：不做命名空间过滤、不乘倍率，数量就是抄到的数量。
-     * 同一物品只占一个槽位，重复命中时数量累加（上限为物品最大堆叠）。
-     */
-    private static void addCopiedOutput(List<ItemStack> outputs, ItemStack stack, int amount) {
-        if (stack == null || stack.isEmpty()) {
-            return;
-        }
-        int total = Math.max(1, amount);
-        String key = stackKey(stack);
-        for (ItemStack existing : outputs) {
-            if (stackKey(existing).equals(key)) {
-                existing.setCount(Math.min(existing.getCount() + total, existing.getMaxStackSize()));
-                return;
-            }
-        }
-        ItemStack copy = stack.copy();
-        copy.setCount(Math.min(total, copy.getMaxStackSize()));
-        outputs.add(copy);
     }
 
     /**

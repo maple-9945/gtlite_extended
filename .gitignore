@@ -1,0 +1,22 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDEA
+.idea/
+*.iml
+out/
+
+# Minecraft Run
+run/
+
+# 本地依赖
+libs/*.jar
+
+# 反编译缓存
+.decomp/
+.diag/
+.gt/
+.gtl2/
+.tmp_gtl/

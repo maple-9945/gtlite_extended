@@ -8,6 +8,7 @@ import com.gtlite.extended.proxy.CommonProxy;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLLoadCompleteEvent;
+import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,10 +33,19 @@ public class GTLiteExtended {
         LOGGER.info("[GTLite Extended] preInit");
         ModNetwork.register();
         MachineRegistration.register();
-        // 石化配方只依赖 Materials / FluidRegistry，preInit 末尾这些都已经注册完毕，
-        // 在这里补齐可以让 JEI 启动时直接看到 4 条石化配方。
-        PetrochemicalRecipeMaps.init();
         proxy.preInit();
+    }
+
+    /**
+     * 石化配方必须等到 postInit 再注册：
+     * 配方里的物品副产物（硫粉、碳粉）要走 {@code OreDictUnifier.get(dust, ...)}，
+     * 而 GT 的统一物品表是在 {@code RegistryEvent.Register<Item>} / {@code Register<IRecipe>}
+     * （init 阶段）才建好的，preInit 时查粉物品还是空的，硫粉/碳粉会被漏掉。
+     * postInit 里物品表已经完整，且仍在 JEI 启动（LoadComplete）之前。
+     */
+    @Mod.EventHandler
+    public void postInit(FMLPostInitializationEvent event) {
+        PetrochemicalRecipeMaps.init();
     }
 
     /**
