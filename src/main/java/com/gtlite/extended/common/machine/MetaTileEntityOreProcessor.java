@@ -48,7 +48,7 @@ public class MetaTileEntityOreProcessor extends RecipeMapMultiblockController im
                 .aisle("XXX", "XSX", "XXX") // S 放在最后一排的中间，这是机器的正面
                 .where('S', selfPredicate())
                 .where('X', states(MetaBlocks.METAL_CASING.getState(BlockMetalCasing.MetalCasingType.STEEL_SOLID))
-                        .setMinGlobalLimited(20)
+                        .setMinGlobalLimited(10)
                         .or(autoAbilities()))
                 .build();
     }

@@ -46,7 +46,7 @@ public class MetaTileEntityPetrochemicalPlant extends RecipeMapMultiblockControl
                 .aisle("XXX", "XSX", "XXX") // S 放在最后一排的中间，这是机器的正面
                 .where('S', selfPredicate())
                 .where('X', states(MetaBlocks.METAL_CASING.getState(BlockMetalCasing.MetalCasingType.STAINLESS_CLEAN))
-                        .setMinGlobalLimited(20)
+                        .setMinGlobalLimited(10)
                         .or(autoAbilities()))
                 .build();
     }
