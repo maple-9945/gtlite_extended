@@ -8,6 +8,7 @@ import gregtech.api.metatileentity.MetaTileEntity;
 import gregtech.api.metatileentity.multiblock.MultiblockControllerBase;
 import gregtech.api.metatileentity.registry.MTEManager;
 import gregtech.api.metatileentity.registry.MTERegistry;
+import gregtech.client.renderer.handler.MetaTileEntityRenderer;
 import gregtech.integration.jei.multiblock.MultiblockInfoCategory;
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
@@ -21,8 +22,27 @@ public class ClientProxy extends CommonProxy {
     /** JEI 的 mod id（Had Enough Items 沿用 jei 这个 id）。 */
     private static final String JEI_MODID = "jei";
 
-    /** 本 mod 注册的 MTE 顺序（meta id），与 MachineRegistration 保持一致。 */
-    private static final String[] MACHINE_IDS = {"ore_processor", "petrochemical_plant"};
+    /** 本 mod 注册的 MTE 顺序（meta id），与 MachineRegistration 保持一致（物品模型按这个顺序绑定）。 */
+    private static final String[] MACHINE_IDS = {"ore_processor", "petrochemical_plant", "me_output_assembly", "me_input_assembly"};
+
+    /** 需要出现在 JEI“多方块结构”页里的机器（只有控制器，部件不算）。 */
+    private static final String[] MULTIBLOCK_IDS = {"ore_processor", "petrochemical_plant"};
+
+    /**
+     * ME 总成的物品模型。
+     *
+     * <p>GTCEu 1.12.2 里 ME 输出总线/输入总线<b>没有</b>独立的 JSON 模型
+     * （不存在 {@code gregtech:me_output_bus#inventory} 这样的模型文件），
+     * 总线外观是 {@code Textures.ME_OUTPUT_BUS / ME_INPUT_BUS} 覆盖贴图，
+     * 物品统一由 GT 的动态 MTE 模型 {@link MetaTileEntityRenderer#MODEL_LOCATION}
+     * （{@code gregtech:machine#normal}）按 MTE 自身贴图 + {@code renderMetaTileEntity}
+     * 里叠的覆盖层来渲染。所以这里把两个 ME 总成指向 GT 的动态 MTE 模型，
+     * 再由两个总成类各自叠 ME 输出/输入总线贴图，外观即与 GT 的 ME 总线一致。</p>
+     */
+    private static final ModelResourceLocation MTE_MODEL = MetaTileEntityRenderer.MODEL_LOCATION;
+
+    /** 两个控制器沿用本 mod 自己的占位 JSON 模型。 */
+    private static final String PLACEHOLDER_MODEL_ID = Tags.MOD_ID + ":mte";
 
     @Override
     public void preInit() {
@@ -31,9 +51,10 @@ public class ClientProxy extends CommonProxy {
             Block block = registry.getBlock();
             if (block != null) {
                 Item item = Item.getItemFromBlock(block);
-                ModelResourceLocation model = new ModelResourceLocation(Tags.MOD_ID + ":mte", "inventory");
+                ModelResourceLocation placeholderModel = new ModelResourceLocation(PLACEHOLDER_MODEL_ID, "inventory");
                 for (int meta = 0; meta < MACHINE_IDS.length; meta++) {
-                    ModelLoader.setCustomModelResourceLocation(item, meta, model);
+                    ModelLoader.setCustomModelResourceLocation(item, meta,
+                            isMEAssembly(MACHINE_IDS[meta]) ? MTE_MODEL : placeholderModel);
                 }
             }
         }
@@ -41,7 +62,7 @@ public class ClientProxy extends CommonProxy {
         // 多方块结构页必须在 JEI 启动（FMLLoadCompleteEvent 里的 JeiStarter）之前塞进
         // MultiblockInfoCategory.REGISTER：GT 的 JustEnoughItemsModule#register 会在启动时
         // 一次性读走这个列表，之后再 registerMultiblock 就没有任何效果了。
-        for (String machineId : MACHINE_IDS) {
+        for (String machineId : MULTIBLOCK_IDS) {
             registerMultiblock(machineId);
         }
 
@@ -64,6 +85,11 @@ public class ClientProxy extends CommonProxy {
         } catch (Throwable t) {
             GTLiteExtended.LOGGER.warn("[GTLite Extended] 贴图资源检查失败", t);
         }
+    }
+
+    /** 是否是需要用 GT 动态 MTE 模型（总线外观）的 ME 总成。 */
+    private static boolean isMEAssembly(String machineId) {
+        return "me_output_assembly".equals(machineId) || "me_input_assembly".equals(machineId);
     }
 
     @Override

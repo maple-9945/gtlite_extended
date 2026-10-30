@@ -1,6 +1,8 @@
 package com.gtlite.extended.common;
 
+import com.gtlite.extended.GTLiteExtended;
 import com.gtlite.extended.Tags;
+import gregtech.api.metatileentity.MetaTileEntity;
 import gregtech.api.metatileentity.registry.MTEManager;
 import gregtech.common.blocks.BlockMachineCasing;
 import gregtech.common.blocks.BlockMetalCasing;
@@ -9,8 +11,12 @@ import gregtech.common.items.MetaItems;
 import gregtech.common.metatileentities.MetaTileEntities;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
+import net.minecraft.item.crafting.Ingredient;
+import net.minecraft.item.crafting.ShapelessRecipes;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.event.RegistryEvent;
+import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.oredict.ShapedOreRecipe;
@@ -91,6 +97,51 @@ public final class ModRecipes {
                 MetaItems.ELECTRIC_PUMP_UHV.getStackForm(),
                 MetaItems.CONVEYOR_MODULE_UHV.getStackForm(),
                 MetaItems.FIELD_GENERATOR_UHV.getStackForm());
+
+        // ============ ME 总成（无序合成） ============
+        if (Loader.isModLoaded("appliedenergistics2")) {
+            // ME 输出总成 = ME输出仓（流体）+ ME输出总线（物品）
+            registerMEAssemblyRecipe(event, "me_output_assembly", "me_output_assembly_recipe",
+                    MetaTileEntities.FLUID_EXPORT_HATCH_ME, MetaTileEntities.ITEM_EXPORT_BUS_ME,
+                    "ME输出仓 + ME输出总线");
+            // ME 库存输入总成 = ME输入仓（流体）+ ME输入总线（物品）
+            registerMEAssemblyRecipe(event, "me_input_assembly", "me_input_assembly_recipe",
+                    MetaTileEntities.FLUID_IMPORT_HATCH_ME, MetaTileEntities.ITEM_IMPORT_BUS_ME,
+                    "ME输入仓 + ME输入总线");
+        }
+    }
+
+    /**
+     * 无序合成：1 个 GT 的 ME 流体仓 + 1 个 ME 物品总线 → 1 个 ME 总成。
+     *
+     * <p>GT 里对应的物品只在装了 AE2 时才注册（没装时为 null），所以这里要做存在性判断。</p>
+     */
+    private static void registerMEAssemblyRecipe(RegistryEvent.Register<IRecipe> event, String machineId,
+                                                 String recipeId, MetaTileEntity fluidPart, MetaTileEntity itemPart,
+                                                 String description) {
+        MetaTileEntity assembly = MTEManager.getInstance().getRegistry(Tags.MOD_ID)
+                .getObject(new ResourceLocation(Tags.MOD_ID, machineId));
+        if (assembly == null) {
+            GTLiteExtended.LOGGER.warn("[GTLite Extended] 找不到 {}，跳过配方", machineId);
+            return;
+        }
+
+        ItemStack fluidStack = fluidPart == null ? ItemStack.EMPTY : fluidPart.getStackForm();
+        ItemStack itemStack = itemPart == null ? ItemStack.EMPTY : itemPart.getStackForm();
+        if (fluidStack.isEmpty() || itemStack.isEmpty()) {
+            GTLiteExtended.LOGGER.warn("[GTLite Extended] 找不到 {}，跳过 {} 配方", description, machineId);
+            return;
+        }
+
+        NonNullList<Ingredient> inputs = NonNullList.create();
+        inputs.add(Ingredient.fromStacks(fluidStack));
+        inputs.add(Ingredient.fromStacks(itemStack));
+
+        event.getRegistry().register(
+                new ShapelessRecipes("", assembly.getStackForm(), inputs)
+                        .setRegistryName(new ResourceLocation(Tags.MOD_ID, recipeId))
+        );
+        GTLiteExtended.LOGGER.info("[GTLite Extended] 已注册无序配方：{} → {}", description, machineId);
     }
 
     /**
