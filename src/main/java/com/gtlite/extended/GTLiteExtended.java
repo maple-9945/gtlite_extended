@@ -2,6 +2,7 @@ package com.gtlite.extended;
 
 import com.gtlite.extended.common.MachineRegistration;
 import com.gtlite.extended.common.network.ModNetwork;
+import com.gtlite.extended.common.recipe.LensMoldRecipeRewriter;
 import com.gtlite.extended.common.recipe.OreProcessingRecipeMaps;
 import com.gtlite.extended.common.recipe.PetrochemicalRecipeMaps;
 import com.gtlite.extended.proxy.CommonProxy;
@@ -46,6 +47,8 @@ public class GTLiteExtended {
     @Mod.EventHandler
     public void postInit(FMLPostInitializationEvent event) {
         PetrochemicalRecipeMaps.init();
+        // 激光蚀刻机的透镜 → 编程电路（兜底扫描，保证赶在 JEI 启动前）
+        LensMoldRecipeRewriter.onPostInit(event);
     }
 
     /**

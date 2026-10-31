@@ -50,10 +50,23 @@ dependencies {
     implementation rfg.deobf('curse.maven:modularui-624243:7320544')
     // Forgelin Continuous（提供 Kotlin 运行时，GTLite Core 是 Kotlin 写的）
     implementation rfg.deobf('curse.maven:forgelin-continuous-456403:6983420')
-    // MixinBooter（GTLite Core 的 EarlyMixinLoader 实现 zone.rong.mixinbooter.IEarlyMixinLoader）
-    implementation rfg.deobf('curse.maven:mixin-booter-419286:7049694')
+    // MixinBooter：现在由 build.gradle 的 use_mixins=true + modUtils.enableMixins(...) 统一引入
+    // （同一 modid 不能同时挂两个 jar，否则 dev 运行会报 duplicate mod；故此处不再重复声明）
+    // implementation rfg.deobf('curse.maven:mixin-booter-419286:7049694')
     // Applied Energistics 2 Extended Life（GTLite Core 的 MixinMetaTileEntityHolder 直接引用 AE2 类）
     implementation rfg.deobf('curse.maven:ae2-extended-life-570458:6302098')
+
+    // AE2 Fluid Craft Rework Unofficial（AE2FC，编译期依赖；运行期由整合包装）
+    // CurseForge project id = 1404390
+    // 1.12.2 最新文件 id = 9205999（ae2fc-2.7.11-unofficial.jar，2026-10-16）
+    // 备选：7742544 = 2.7.10、7403081 = 2.7.9、7373013 = 2.7.8
+    compileOnly rfg.deobf('curse.maven:ae2fluidcraft-rework-unofficial-1404390:9205999')
+
+    // 如果 CurseMaven 拉不下来（镜像 404 / POM 依赖解析失败），改用本地 jar：
+    //  1) 去 https://www.curseforge.com/minecraft/mc-mods/ae2fluidcraft-rework-unofficial/files 下载
+    //     ae2fc-2.7.11-unofficial.jar，放进工程根目录的 libs/ 文件夹；
+    //  2) 注释掉上面的 compileOnly rfg.deobf(...)，换成下面这行：
+    // compileOnly rfg.deobf(files('libs/ae2fc-2.7.11-unofficial.jar'))
 }
 
 if (!configurations.shade.dependencies.empty) {
