@@ -15,6 +15,9 @@ import codechicken.lib.vec.Matrix4;
 import gregtech.api.gui.ModularUI;
 import gregtech.api.metatileentity.MetaTileEntity;
 import gregtech.api.metatileentity.interfaces.IGregTechTileEntity;
+import gregtech.api.capability.IMultipleTankHandler;
+import gregtech.api.capability.impl.FluidTankList;
+import gregtech.api.capability.impl.ItemHandlerList;
 import gregtech.api.metatileentity.multiblock.AbilityInstances;
 import gregtech.api.metatileentity.multiblock.MultiblockAbility;
 import gregtech.api.metatileentity.multiblock.MultiblockControllerBase;
@@ -38,12 +41,17 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.IFluidTank;
+import net.minecraftforge.fluids.capability.IFluidTankProperties;
+import net.minecraftforge.items.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -101,14 +109,90 @@ public class MetaTileEntityMEInputAssembly extends MetaTileEntityMEStockingBus {
         return Arrays.asList(MultiblockAbility.IMPORT_ITEMS, MultiblockAbility.IMPORT_FLUIDS);
     }
 
+    private DualAbilityHandler dualAbilityHandler;
+
+    /** 物品能力 + 流体能力的复合 handler：让 GT/gtlitecore 的隔离逻辑把本总成的流体绑定到本总成的物品总线上。 */
+    private DualAbilityHandler getDualAbilityHandler() {
+        if (this.dualAbilityHandler == null) {
+            this.dualAbilityHandler = new DualAbilityHandler(((ItemHandlerList) this.getImportItems()).getBackingHandlers());
+        }
+        return this.dualAbilityHandler;
+    }
+
     @Override
     public void registerAbilities(@NotNull AbilityInstances abilityInstances) {
         if (abilityInstances.isKey(MultiblockAbility.IMPORT_ITEMS)) {
-            super.registerAbilities(abilityInstances);
+            abilityInstances.add(this.getDualAbilityHandler());
         } else if (abilityInstances.isKey(MultiblockAbility.IMPORT_FLUIDS)) {
             for (ExportOnlyAEFluidSlot slot : this.getAEFluidHandler().getInventory()) {
                 abilityInstances.add(slot);
             }
+        }
+    }
+
+    /**
+     * 物品总线 + 流体仓的复合能力。
+     *
+     * <p>GT 1.12.2 的“总线隔离(distinct)”只按 IMPORT_ITEMS 逐个总线搜索配方；
+     * 流体是否跟随该总线取决于该 handler 是否同时是 {@link IMultipleTankHandler}
+     * （gtlitecore 的通道隔离正是这样把物品与流体配对的）。让本总成的物品能力同时
+     * 暴露自己的 16 个流体仓，隔离开启后它只会用自己仓里的流体参与配方匹配。</p>
+     */
+    protected class DualAbilityHandler extends ItemHandlerList implements IMultipleTankHandler {
+
+        private final FluidTankList fluidTanks;
+
+        DualAbilityHandler(Collection<IItemHandler> backingHandlers) {
+            super(new ArrayList<IItemHandler>(backingHandlers));
+            this.fluidTanks = new FluidTankList(false, this.getFluidTankSlots());
+        }
+
+        private List<IFluidTank> getFluidTankSlots() {
+            List<IFluidTank> tanks = new ArrayList<>();
+            for (ExportOnlyAEFluidSlot slot : getAEFluidHandler().getInventory()) {
+                tanks.add(slot);
+            }
+            return tanks;
+        }
+
+        @Override
+        public List<IMultipleTankHandler.ITankEntry> getFluidTanks() {
+            return this.fluidTanks.getFluidTanks();
+        }
+
+        @Override
+        public int getTanks() {
+            return this.fluidTanks.getTanks();
+        }
+
+        @Override
+        public IMultipleTankHandler.ITankEntry getTankAt(int index) {
+            return this.fluidTanks.getTankAt(index);
+        }
+
+        @Override
+        public boolean allowSameFluidFill() {
+            return this.fluidTanks.allowSameFluidFill();
+        }
+
+        @Override
+        public IFluidTankProperties[] getTankProperties() {
+            return this.fluidTanks.getTankProperties();
+        }
+
+        @Override
+        public int fill(FluidStack resource, boolean doFill) {
+            return this.fluidTanks.fill(resource, doFill);
+        }
+
+        @Override
+        public FluidStack drain(FluidStack resource, boolean doDrain) {
+            return this.fluidTanks.drain(resource, doDrain);
+        }
+
+        @Override
+        public FluidStack drain(int maxDrain, boolean doDrain) {
+            return this.fluidTanks.drain(maxDrain, doDrain);
         }
     }
 
@@ -125,6 +209,8 @@ public class MetaTileEntityMEInputAssembly extends MetaTileEntityMEStockingBus {
     protected void initializeInventory() {
         this.getAEFluidHandler();
         super.initializeInventory();
+        // 物品 handler 可能被 GT 重建，清掉复合能力的缓存，保证和当前 backing handlers 一致
+        this.dualAbilityHandler = null;
     }
 
     IMEMonitor<IAEFluidStack> getFluidMonitor() {
@@ -342,16 +428,18 @@ public class MetaTileEntityMEInputAssembly extends MetaTileEntityMEStockingBus {
         // 物品配置（GT 库存输入总线原生控件）
         builder.widget(new AEItemConfigWidget(7, 25, this.getAEItemHandler()));
         // 流体配置（GT 库存输入仓原生控件），放在物品配置下方，避免控件范围重叠
-        AEFluidConfigWidget fluidConfig = new AEFluidConfigWidget(7, 105, this.getAEFluidHandler());
-        builder.widget(fluidConfig);
-
-        // 自动拉取切换按钮：物品侧调用 GT 库存输入总线自己的 setAutoPull，流体侧控制本总成的 fluidAutoPull
-        builder.widget(new ImageCycleButtonWidget(97, 25, 16, 16, GuiTextures.BUTTON_AUTO_PULL,
+        // 物品自动拉取按钮：放在物品配置网格右侧的窄列（不与配置槽重叠）
+        builder.widget(new ImageCycleButtonWidget(79, 25, 16, 16, GuiTextures.BUTTON_AUTO_PULL,
                 this::isItemAutoPull, this::setItemAutoPull)
                 .setTooltipHoverString("gregtech.gui.me_bus.auto_pull_button"));
-        builder.widget(new ImageCycleButtonWidget(97, 45, 16, 16, GuiTextures.BUTTON_AUTO_PULL,
+
+        // 流体页：流体配置 + 流体自动拉取按钮，整组与物品区上下分开，互不遮挡
+        WidgetGroup fluidPage = new WidgetGroup(7, 105, 162, 72);
+        fluidPage.addWidget(new AEFluidConfigWidget(0, 0, this.getAEFluidHandler()));
+        fluidPage.addWidget(new ImageCycleButtonWidget(90, 0, 16, 16, GuiTextures.BUTTON_AUTO_PULL,
                 () -> this.fluidAutoPull, this::setFluidAutoPull)
                 .setTooltipHoverString("gtlite_extended.gui.fluid_auto_pull_button"));
+        builder.widget(fluidPage);
 
         // 编程电路槽：GT 原生左/右键/滚轮行为 + Shift+左键打开 0~32 选择面板
         WidgetGroup circuitSelector = new WidgetGroup(7, 105, 9 * 18, 4 * 18);
@@ -367,7 +455,7 @@ public class MetaTileEntityMEInputAssembly extends MetaTileEntityMEStockingBus {
                     .setShouldClientCallback(true)
                     .setTooltipText("gtlite_extended.gui.circuit_button", circuitValue));
         }
-        circuitSlot.attachSelector(circuitSelector, fluidConfig);
+        circuitSlot.attachSelector(circuitSelector, fluidPage);
         builder.widget(circuitSelector);
         builder.widget(circuitSlot);
         builder.widget(new SlotWidget(this.extraSlotInventory, 0, 79, 61)
