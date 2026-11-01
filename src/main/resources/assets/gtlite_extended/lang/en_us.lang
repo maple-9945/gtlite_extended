@@ -15,3 +15,5 @@ gtlite_extended.gui.buffer_items=Output buffer (items)
 gtlite_extended.gui.buffer_fluids=Output buffer (fluids)
 item.gtlite_extended.chip_perfect_oc.name=Perfect Overclock Chip
 item.gtlite_extended.chip_advanced.name=Advanced Mode Chip
+gtlite_extended.gui.circuit_button=Set programmed circuit: %s
+gtlite_extended.gui.fluid_auto_pull_button=Toggle fluid auto-pull mode

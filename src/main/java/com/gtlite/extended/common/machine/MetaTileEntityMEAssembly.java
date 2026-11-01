@@ -21,6 +21,7 @@ import gregtech.api.metatileentity.multiblock.AbilityInstances;
 import gregtech.api.metatileentity.multiblock.IMultiblockAbilityPart;
 import gregtech.api.metatileentity.multiblock.IMultiblockPart;
 import gregtech.api.metatileentity.multiblock.MultiblockAbility;
+import gregtech.api.recipes.ingredients.IntCircuitIngredient;
 import gregtech.api.metatileentity.multiblock.MultiblockControllerBase;
 import gregtech.common.metatileentities.multi.multiblockpart.appeng.MetaTileEntityAEHostablePart;
 import net.minecraft.item.ItemStack;
@@ -70,12 +71,12 @@ import java.util.List;
 public abstract class MetaTileEntityMEAssembly extends MetaTileEntityAEHostablePart<IAEItemStack>
         implements IMultiblockAbilityPart<IItemHandlerModifiable> {
 
-    /** 标记槽总数（8 列 × 6 行）。 */
-    public static final int FILTER_SLOTS = 48;
+    /** 标记槽总数（9 列 × 2 行 × 4 页 = 72）。 */
+    public static final int FILTER_SLOTS = 72;
     /** 网格列数。 */
-    protected static final int GRID_COLUMNS = 8;
-    /** 一屏显示的行数（其余靠滚动条）。 */
-    protected static final int VISIBLE_ROWS = 4;
+    protected static final int GRID_COLUMNS = 9;
+    /** 一页显示的行数（每页 9×2 = 18 槽，共 4 页）。 */
+    protected static final int VISIBLE_ROWS = 2;
 
     /** 过滤标记的网络同步包 id（只在本类内部使用，父类忽略未知 id）。 */
     private static final int FILTER_SYNC_DATA = 8157;
@@ -318,6 +319,22 @@ public abstract class MetaTileEntityMEAssembly extends MetaTileEntityAEHostableP
         if (a == null || b == null || a.isEmpty() || b.isEmpty()) {
             return false;
         }
+        if (!ItemStack.areItemsEqual(a, b)) {
+            return false;
+        }
+        // GT 编程电路的 NBT 里存的是 Configuration（0~32），同一个电路物品不同配置值
+        // 不应被视为不同物品；否则标记/提取/匹配会因为 NBT 不一致而失败。
+        if (IntCircuitIngredient.isIntegratedCircuit(a) || IntCircuitIngredient.isIntegratedCircuit(b)) {
+            return true;
+        }
+        return ItemStack.areItemStackTagsEqual(a, b);
+    }
+
+    /** 严格匹配（item + meta + NBT）：用于标记去重，避免把 Configuration 不同的电路合并掉。 */
+    protected static boolean isSameItemExact(ItemStack a, ItemStack b) {
+        if (a == null || b == null || a.isEmpty() || b.isEmpty()) {
+            return false;
+        }
         return ItemStack.areItemsEqual(a, b) && ItemStack.areItemStackTagsEqual(a, b);
     }
 
@@ -330,7 +347,7 @@ public abstract class MetaTileEntityMEAssembly extends MetaTileEntityAEHostableP
 
     private static boolean containsItem(List<ItemStack> list, ItemStack stack) {
         for (ItemStack entry : list) {
-            if (isSameItem(entry, stack)) {
+            if (isSameItemExact(entry, stack)) {
                 return true;
             }
         }
