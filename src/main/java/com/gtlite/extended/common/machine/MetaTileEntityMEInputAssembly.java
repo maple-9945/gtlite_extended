@@ -77,7 +77,7 @@ public class MetaTileEntityMEInputAssembly extends MetaTileEntityMEStockingBus {
     private static final String NBT_FLUID_TANK = "tank";
 
     private StockingFluidList fluidHandler;
-    private boolean fluidAutoPull = true;
+    private boolean fluidAutoPull = false;
 
     /** GT 库存输入总线的 autoPull 是 private，这里用反射读取/切换，行为仍走 GT 自己的 setAutoPull。 */
     private static Method setAutoPullMethod;
@@ -427,18 +427,17 @@ public class MetaTileEntityMEInputAssembly extends MetaTileEntityMEStockingBus {
                 : I18n.format("gregtech.gui.me_network.offline"), 4210752);
         // 物品配置（GT 库存输入总线原生控件）
         builder.widget(new AEItemConfigWidget(7, 25, this.getAEItemHandler()));
-        // 流体配置（GT 库存输入仓原生控件），放在物品配置下方，避免控件范围重叠
-        // 物品自动拉取按钮：放在物品配置网格右侧的窄列（不与配置槽重叠）
-        builder.widget(new ImageCycleButtonWidget(79, 25, 16, 16, GuiTextures.BUTTON_AUTO_PULL,
+        // 自动拉取按钮统一放到标题行右侧空白处，避免压住物品/流体配置槽
+        builder.widget(new ImageCycleButtonWidget(128, 15, 16, 16, GuiTextures.BUTTON_AUTO_PULL,
                 this::isItemAutoPull, this::setItemAutoPull)
                 .setTooltipHoverString("gregtech.gui.me_bus.auto_pull_button"));
-
-        // 流体页：流体配置 + 流体自动拉取按钮，整组与物品区上下分开，互不遮挡
-        WidgetGroup fluidPage = new WidgetGroup(7, 105, 162, 72);
-        fluidPage.addWidget(new AEFluidConfigWidget(0, 0, this.getAEFluidHandler()));
-        fluidPage.addWidget(new ImageCycleButtonWidget(90, 0, 16, 16, GuiTextures.BUTTON_AUTO_PULL,
+        builder.widget(new ImageCycleButtonWidget(148, 15, 16, 16, GuiTextures.BUTTON_AUTO_PULL,
                 () -> this.fluidAutoPull, this::setFluidAutoPull)
                 .setTooltipHoverString("gtlite_extended.gui.fluid_auto_pull_button"));
+
+        // 流体页：流体配置（整组位于物品区下方）
+        WidgetGroup fluidPage = new WidgetGroup(7, 105, 162, 72);
+        fluidPage.addWidget(new AEFluidConfigWidget(0, 0, this.getAEFluidHandler()));
         builder.widget(fluidPage);
 
         // 编程电路槽：GT 原生左/右键/滚轮行为 + Shift+左键打开 0~32 选择面板
